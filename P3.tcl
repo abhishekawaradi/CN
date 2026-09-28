@@ -29,20 +29,21 @@ set n6 [$ns node]
 set n7 [$ns node]
 set n8 [$ns node]
 
-# Node shapes and colors
+# Node configuration
 $n7 shape box
 $n7 color Blue
 
 $n8 shape hexagon
 $n8 color Red
 
-# Create links
+# Create duplex links
 $ns duplex-link $n1 $n0 2Mb 10ms DropTail
 $ns duplex-link $n2 $n0 2Mb 10ms DropTail
 $ns duplex-link $n0 $n3 1Mb 20ms DropTail
 
 # Create Ethernet LAN
-$ns make-lan "$n3 $n4 $n5 $n6 $n7 $n8" 512Kb 40ms LL Queue/DropTail Mac/802_3
+$ns make-lan "$n3 $n4 $n5 $n6 $n7 $n8" \
+    512Kb 40ms LL Queue/DropTail Mac/802_3
 
 # Link orientation
 $ns duplex-link-op $n1 $n0 orient right-down
@@ -52,7 +53,7 @@ $ns duplex-link-op $n0 $n3 orient right
 # Queue limit
 $ns queue-limit $n0 $n3 20
 
-# TCP Vegas connection
+# TCP Vegas connection: n1 -> n7
 set tcp1 [new Agent/TCP/Vegas]
 $ns attach-agent $n1 $tcp1
 
@@ -72,7 +73,7 @@ set tfile [open cwnd.tr w]
 $tcp1 attach $tfile
 $tcp1 trace cwnd_
 
-# TCP Reno connection
+# TCP Reno connection: n2 -> n8
 set tcp2 [new Agent/TCP/Reno]
 $ns attach-agent $n2 $tcp2
 
@@ -92,14 +93,28 @@ set tfile2 [open cwnd2.tr w]
 $tcp2 attach $tfile2
 $tcp2 trace cwnd_
 
-# Start and stop FTP applications
+# Start traffic
 $ns at 0.5 "$ftp1 start"
 $ns at 1.0 "$ftp2 start"
 
-$ns at 5.0 "$ftp2 stop"
+# Stop traffic
 $ns at 5.0 "$ftp1 stop"
+$ns at 5.0 "$ftp2 stop"
 
+# Finish simulation
 $ns at 5.5 "finish"
 
-# Run simulation
 $ns run
+
+
+BEGIN {
+}
+
+{
+    if ($6 == "cwnd_") {
+        printf("%f\t%f\n", $1, $7);
+    }
+}
+
+END {
+}
